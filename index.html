@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Putting Tracker</title>
     <link rel="stylesheet" href="style.css">
     <meta name="title" content="Putting Tracker">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="icon" type="image/x-icon" href="images/Icon.ico">
 </head>
 <body>
@@ -21,7 +24,7 @@
                 <li><strong>Missed:</strong> Log how many throws you missed.</li>
                 <li><strong>Save:</strong> Click <strong>OK</strong> to calculate your success rate for that specific distance.</li>
                 <li><strong>Data:</strong> Use the buttons at the bottom to download or upload your past sessions (json format). The reload will reset your progress.</li>
-                <li><strong>Support:</strong> If you would like to support this project, please consider supporting us via<a href="https://www.paypal.com/donate/?business=YOUR_PAYPAL_EMAIL&amount=10&currency_code=USD" target="_blank">PayPal</a></li>
+                <li><strong>Support:</strong> If you would like to support this project, please consider supporting us via <a href="https://www.paypal.com/donate/?business=YOUR_PAYPAL_EMAIL&amount=10&currency_code=USD" target="_blank">PayPal</a></li>
             </ul>
             <button id="btn-close-modal" class="btn-primary">Got it, let's go!</button>
         </div>
@@ -87,7 +90,7 @@
 
         <hr class="divider">
 
-            <div id="stats-summary-container" class="stats-summary"></div>
+        <div id="stats-summary-container" class="stats-summary"></div>
 
         <hr class="divider">
 
@@ -101,21 +104,17 @@
             <p><strong>About Putting tracker</strong></p>
             <p>This tool helps you track your putting accuracy across different distances. Please share it with your fellow discgolfers! We are working on new features and improvements.</p>
 
-            <p>If you have any feedback or suggestions, feel free to reach out via <a href="https://github.com/F9k-27/Putting_tracker/issues" target="_blank">GitHub Issues</a> or through the contact form on this <a href="https://docs.google.com/forms/d/e/1FAIpQLSfF94MN6A2Km8bQsYO5lbPzx5nf2Z0mYJU_t2NX1kvaHa0VEQ/viewform?usp=publish-editor" target="_blank">
-                        link
-                    </a>.</p>
+            <p>If you have any feedback or suggestions, feel free to reach out via <a href="https://github.com/F9k-27/Putting_tracker/issues" target="_blank">GitHub Issues</a> or through the contact form on this <a href="https://docs.google.com/forms/d/e/1FAIpQLSfF94MN6A2Km8bQsYO5lbPzx5nf2Z0mYJU_t2NX1kvaHa0VEQ/viewform?usp=publish-editor" target="_blank">link</a>.</p>
 
             <div class="support-box">
                 <p><strong>Like this project?</strong></p>
                 <p>
                     Support future development via 
-                    <a href="https://www.paypal.com/donate/?hosted_button_id=ULEZTSWZFVPSG" target="_blank">
-                        PayPal
-                    </a>:
+                    <a href="https://www.paypal.com/donate/?hosted_button_id=ULEZTSWZFVPSG" target="_blank">PayPal</a>:
                 </p>
-
                 <img src="images/qrcode.png" alt="PayPal QR Code" class="support-qr">
             </div>
+        </div>
     </div>
 
     <script src="script.js"></script>

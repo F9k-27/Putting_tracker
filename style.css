@@ -8,12 +8,16 @@
     --border-color: #dfe6e9;
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
-    padding: 20px;
+    padding: 16px;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
     background-color: var(--bg-color);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -22,7 +26,7 @@ body {
 
 .container {
     background: var(--card-bg);
-    padding: 40px 30px 30px; /* Extra top padding for the unit button */
+    padding: 48px 20px 24px;
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
     text-align: center;
@@ -34,9 +38,9 @@ body {
 /* Unit Toggle Button */
 .unit-toggle {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    padding: 6px 12px;
+    top: 12px;
+    right: 12px;
+    padding: 8px 14px;
     font-size: 12px;
     border-radius: 6px;
     background: var(--bg-color);
@@ -44,6 +48,8 @@ body {
     border: 1px solid var(--border-color);
     cursor: pointer;
     font-weight: bold;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .unit-toggle:hover {
@@ -63,6 +69,7 @@ body {
     backdrop-filter: blur(3px);
     opacity: 1;
     transition: opacity 0.3s ease;
+    padding: 16px;
 }
 
 .modal-overlay.hidden {
@@ -72,31 +79,35 @@ body {
 
 .modal-content {
     background: var(--card-bg);
-    padding: 30px;
+    padding: 24px 20px;
     border-radius: 20px;
     max-width: 400px;
-    width: 90%;
+    width: 100%;
     text-align: center;
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
-.modal-content h2 { margin-top: 0; color: var(--accent-blue-hover); }
+.modal-content h2 { margin-top: 0; color: var(--accent-blue-hover); font-size: clamp(18px, 5vw, 22px); }
 .modal-content p { color: var(--text-muted); line-height: 1.5; }
 .modal-instructions {
     text-align: left;
     color: var(--text-muted);
     font-size: 14px;
     line-height: 1.6;
-    margin-bottom: 25px;
-    padding-left: 20px;
+    margin-bottom: 20px;
+    padding-left: 18px;
 }
 
 .stats-header {
     display: flex;
     justify-content: space-between;
     margin-top: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     font-weight: 700;
+    font-size: clamp(14px, 4vw, 16px);
 }
 
 .bolt-percent { color: var(--accent-blue-hover); }
@@ -111,31 +122,120 @@ body {
 }
 
 .images-wrapper img {
-    width: auto;     
-    height: 170px;  
+    width: auto;
+    height: clamp(110px, 28vw, 170px);
     border-radius: 10px;
-    object-fit: contain; 
+    object-fit: contain;
 }
 
+.distance-display {
+    font-size: clamp(22px, 7vw, 28px);
+    margin-bottom: 12px;
+}
 
-.distance-display { font-size: 28px; margin-bottom: 15px; }
-.slider-container { margin-bottom: 20px; }
-input[type=range] { width: 100%; cursor: pointer; }
+.slider-container { margin-bottom: 16px; }
 
-.controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+input[type=range] {
+    width: 100%;
+    cursor: pointer;
+    height: 28px; /* Larger touch target */
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
 
-.divider { border: 0; border-top: 1px solid var(--border-color); margin: 10px 0; }
+input[type=range]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+}
 
-.input-group-col { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
-.input-group-col label { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px; }
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-blue-hover);
+    margin-top: -9px;
+    cursor: pointer;
+}
 
-.number-bar { display: flex; justify-content: center; gap: 4px; width: 100%; flex-wrap: wrap; }
-.num-btn { flex: 1; min-width: 32px; padding: 10px 0; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); border-radius: 8px; cursor: pointer; transition: 0.2s; }
+input[type=range]::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+}
+
+input[type=range]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-blue-hover);
+    border: none;
+    cursor: pointer;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.divider { border: 0; border-top: 1px solid var(--border-color); margin: 12px 0; }
+
+.input-group-col { display: flex; flex-direction: column; align-items: center; margin-bottom: 16px; }
+.input-group-col label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.number-bar {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.num-btn {
+    flex: 1;
+    min-width: 28px;
+    max-width: 44px;
+    padding: 10px 0;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-main);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: clamp(13px, 3.5vw, 15px);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
 .num-btn:hover { background: #f0f8ff; border-color: var(--accent-blue); }
 .num-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
 
-.counter-group { display: flex; align-items: center; gap: 20px; }
-.counter-btn { width: 45px; height: 45px; border-radius: 50%; font-size: 20px; padding: 0; display: flex; justify-content: center; align-items: center; }
+.counter-group { display: flex; align-items: center; gap: 24px; }
+
+.counter-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    font-size: 22px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
 #missed-display { font-size: 24px; font-weight: 700; min-width: 30px; }
 
 button {
@@ -148,6 +248,8 @@ button {
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 button:hover {
@@ -159,14 +261,49 @@ button:hover {
 button:active {
     transform: scale(0.95);
 }
-.btn-primary { width: 100%; padding: 15px; background-color: var(--accent-blue); color: white; border: none; font-size: 16px; margin-top: 10px; }
+
+.btn-primary {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    font-size: 16px;
+    margin-top: 10px;
+}
 .btn-primary:hover { background-color: var(--accent-blue-hover); color: white; }
 
-.data-section { display: flex; justify-content: space-between; gap: 10px; }
-.btn-secondary { flex: 1; padding: 10px; font-size: 13px; color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); text-align: center; cursor: pointer; transition: 0.2s; display: inline-block; box-sizing: border-box; }
+.data-section { display: flex; justify-content: space-between; gap: 8px; }
+
+.btn-secondary {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    display: inline-block;
+    box-sizing: border-box;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
 .btn-secondary:hover { background: var(--border-color); color: var(--text-main); }
 
-.about-section { margin-top: 30px; font-size: 13px; color: var(--text-muted); line-height: 1.5; text-align: left; background: var(--bg-color); padding: 15px; border-radius: 10px; }
+.about-section {
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    text-align: left;
+    background: var(--bg-color);
+    padding: 15px;
+    border-radius: 10px;
+}
 .about-section p { margin: 0 0 10px 0; }
 .about-section p:last-child { margin: 0; }
 
@@ -179,11 +316,11 @@ button:active {
 
 /* --- Statistics Summary Scale Bars --- */
 .stats-summary {
-    margin: 15px 0;
+    margin: 12px 0;
     text-align: left;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .empty-stats {
@@ -197,23 +334,25 @@ button:active {
 .stat-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .stat-label {
-    width: 45px; /* Keeps the labels aligned */
-    font-size: 14px;
+    width: 40px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-main);
     text-align: right;
+    flex-shrink: 0;
 }
 
 .stat-bar-bg {
-    flex: 1; /* Takes up the remaining middle space */
+    flex: 1;
     height: 10px;
     background-color: var(--border-color);
     border-radius: 5px;
     overflow: hidden;
+    min-width: 0;
 }
 
 .stat-bar-fill {
@@ -224,9 +363,68 @@ button:active {
 }
 
 .stat-percent {
-    width: 40px; /* Keeps percentages aligned */
-    font-size: 14px;
+    width: 38px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-muted);
     text-align: right;
+    flex-shrink: 0;
+}
+
+/* --- Responsive breakpoints --- */
+@media (max-width: 400px) {
+    body {
+        padding: 10px;
+        align-items: flex-start;
+    }
+
+    .container {
+        padding: 48px 14px 20px;
+        border-radius: 16px;
+    }
+
+    .controls {
+        gap: 8px;
+    }
+
+    .controls button {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+
+    .counter-group {
+        gap: 18px;
+    }
+
+    .data-section {
+        flex-direction: column;
+    }
+
+    .btn-secondary {
+        width: 100%;
+        flex: none;
+    }
+
+    .number-bar {
+        gap: 3px;
+    }
+
+    .num-btn {
+        padding: 9px 0;
+    }
+}
+
+/* Ensure no horizontal overflow on any screen */
+@media (max-width: 520px) {
+    .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .modal-content {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        max-height: 85vh;
+        padding: 24px 18px 32px;
+    }
 }
