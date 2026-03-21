@@ -176,3 +176,57 @@ button:active {
     width: 140px;
     height: auto;
 }
+
+/* --- Statistics Summary Scale Bars --- */
+.stats-summary {
+    margin: 15px 0;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.empty-stats {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-style: italic;
+    margin: 10px 0;
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stat-label {
+    width: 45px; /* Keeps the labels aligned */
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    text-align: right;
+}
+
+.stat-bar-bg {
+    flex: 1; /* Takes up the remaining middle space */
+    height: 10px;
+    background-color: var(--border-color);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    background-color: var(--accent-blue);
+    border-radius: 5px;
+    transition: width 0.4s ease-out;
+}
+
+.stat-percent {
+    width: 40px; /* Keeps percentages aligned */
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: right;
+}

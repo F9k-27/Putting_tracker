@@ -9,6 +9,7 @@ const imageContainer = document.getElementById('image-container');
 const successDisplay = document.getElementById('success-percent');
 const repsDisplay = document.getElementById('reps-total');
 const missedDisplay = document.getElementById('missed-display');
+const statsSummaryContainer = document.getElementById('stats-summary-container'); // NEW: Scale bars container
 
 // Modal Elements
 const welcomeModal = document.getElementById('welcome-modal');
@@ -72,6 +73,54 @@ function updateUI(distance) {
         const success = ((data.totalBalls - data.totalMissed) / data.totalBalls) * 100;
         successDisplay.innerText = Math.round(success);
     }
+
+    // 4. Update the visual scale bars for all distances
+    renderStatsSummary();
+}
+
+// Render Scale Bars for All Played Distances
+function renderStatsSummary() {
+    if (!statsSummaryContainer) return; // Safety check if HTML isn't updated yet
+
+    statsSummaryContainer.innerHTML = ''; // Clear current bars
+    
+    // Get all recorded distances and sort them numerically
+    const distances = Object.keys(statsData).map(Number).sort((a, b) => a - b);
+    
+    if (distances.length === 0) {
+        statsSummaryContainer.innerHTML = '<p class="empty-stats">No throws logged yet.</p>';
+        return;
+    }
+
+    distances.forEach(dist => {
+        const data = statsData[dist];
+        if (data.totalBalls === 0) return; // Skip if no balls thrown
+
+        // Calculate success percentage
+        const successRate = Math.round(((data.totalBalls - data.totalMissed) / data.totalBalls) * 100);
+        
+        // Handle Unit conversion for the label
+        let displayDist = dist;
+        let unit = "m";
+        if (!isMeters) {
+            displayDist = Math.round(dist * 3.28084);
+            unit = "ft";
+        }
+
+        // Create the row element
+        const row = document.createElement('div');
+        row.className = 'stat-row';
+        
+        row.innerHTML = `
+            <div class="stat-label">${displayDist}${unit}</div>
+            <div class="stat-bar-bg">
+                <div class="stat-bar-fill" style="width: ${successRate}%"></div>
+            </div>
+            <div class="stat-percent">${successRate}%</div>
+        `;
+        
+        statsSummaryContainer.appendChild(row);
+    });
 }
 
 // "My Bag" Bar Logic
