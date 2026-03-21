@@ -7,6 +7,7 @@
 This tool helps you track your putting accuracy across different distances.
 
 Please share it with your fellow discgolfers! We are working on new features and improvements.
+[Link](https://f9k-27.github.io/Putting_tracker/) to the application.
 
 ## Feedback and Suggestions
 
