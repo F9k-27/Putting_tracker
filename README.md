@@ -30,6 +30,7 @@ We are actively working on expanding the Putting Tracker with new features to ma
 
 Planned improvements include:
 
+- 🌐 Buy domain for easier search
 - 👤 User accounts with login functionality
 - 💾 Saving and managing personal data directly inside the app
 - 🏆 Putting leagues for existing discgolf courses
