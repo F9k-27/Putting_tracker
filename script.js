@@ -80,11 +80,10 @@ function updateUI(distance) {
 
 // Render Scale Bars for All Played Distances
 function renderStatsSummary() {
-    if (!statsSummaryContainer) return; // Safety check if HTML isn't updated yet
+    if (!statsSummaryContainer) return;
 
-    statsSummaryContainer.innerHTML = ''; // Clear current bars
+    statsSummaryContainer.innerHTML = ''; 
     
-    // Get all recorded distances and sort them numerically
     const distances = Object.keys(statsData).map(Number).sort((a, b) => a - b);
     
     if (distances.length === 0) {
@@ -94,12 +93,11 @@ function renderStatsSummary() {
 
     distances.forEach(dist => {
         const data = statsData[dist];
-        if (data.totalBalls === 0) return; // Skip if no balls thrown
+        if (data.totalBalls === 0) return;
 
-        // Calculate success percentage
-        const successRate = Math.round(((data.totalBalls - data.totalMissed) / data.totalBalls) * 100);
+        const totalHits = data.totalBalls - data.totalMissed;
+        const successRate = Math.round((totalHits / data.totalBalls) * 100);
         
-        // Handle Unit conversion for the label
         let displayDist = dist;
         let unit = "m";
         if (!isMeters) {
@@ -107,16 +105,19 @@ function renderStatsSummary() {
             unit = "ft";
         }
 
-        // Create the row element
         const row = document.createElement('div');
         row.className = 'stat-row';
         
+        // Added a "stat-meta" div to hold the percentage and the y/x count
         row.innerHTML = `
             <div class="stat-label">${displayDist}${unit}</div>
             <div class="stat-bar-bg">
                 <div class="stat-bar-fill" style="width: ${successRate}%"></div>
             </div>
-            <div class="stat-percent">${successRate}%</div>
+            <div class="stat-meta">
+                <div class="stat-percent">${successRate}%</div>
+                <div class="stat-count">${totalHits}/${data.totalBalls}</div>
+            </div>
         `;
         
         statsSummaryContainer.appendChild(row);
