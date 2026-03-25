@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Putting Tracker</title>
     <link rel="stylesheet" href="style.css">
     <meta name="title" content="Putting Tracker">
@@ -24,23 +24,59 @@
                 <li><strong>Missed:</strong> Log how many throws you missed.</li>
                 <li><strong>Save:</strong> Click <strong>OK</strong> to calculate your success rate for that specific distance.</li>
                 <li><strong>Data:</strong> Use the buttons at the bottom to download or upload your past sessions (json format). The reload will reset your progress.</li>
+                <li><strong>Game Mode:</strong> Click the 🎮 button to enter game mode, where the distance changes every throw. You can set the min and max distance and total throws for the game session.</li>
                 <li><strong>Support:</strong> If you would like to support this project, please consider supporting us via <a href="https://www.paypal.com/donate/?business=YOUR_PAYPAL_EMAIL&amount=10&currency_code=USD" target="_blank">PayPal</a></li>
             </ul>
             <button id="btn-close-modal" class="btn-primary">Got it, let's go!</button>
         </div>
     </div>
 
+    <div id="game-setup-modal" class="modal-overlay d-none">
+        <div class="modal-content">
+            <h2>Putting Game Setup</h2>
+            <p style="font-size: 14px; margin-bottom: 20px;">Distance changes every throw!</p>
+            
+            <div class="input-group-col">
+                <label>Min Distance (<span class="game-unit-label">m</span>)</label>
+                <input type="number" id="game-min-dist" class="input-style" value="5" min="1" max="35">
+            </div>
+            <div class="input-group-col">
+                <label>Max Distance (<span class="game-unit-label">m</span>)</label>
+                <input type="number" id="game-max-dist" class="input-style" value="10" min="1" max="35">
+            </div>
+            <div class="input-group-col">
+                <label>Total Throws</label>
+                <input type="number" id="game-reps" class="input-style" value="10" min="1" max="100">
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="btn-cancel-game" class="btn-secondary">Cancel</button>
+                <button id="btn-start-game" class="btn-primary" style="margin-top: 0;">Start Game</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="modal-overlay d-none">
+        <div class="modal-content">
+            <h2>Game Finished!</h2>
+            <div id="game-results-summary" style="font-size: 18px; margin: 20px 0; font-weight: bold; color: var(--accent-blue-hover);"></div>
+            <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">Your overall stats have been updated.</p>
+            <button id="btn-close-game-over" class="btn-primary">Awesome!</button>
+        </div>
+    </div>
+
     <div class="container">
+        <button id="btn-open-game-setup" class="game-toggle-btn">🎮</button>
         <button id="btn-unit-toggle" class="unit-toggle">Unit: Meters</button>
 
         <div class="stats-header">
             <div class="bolt-percent">Success: <span id="success-percent">0</span>%</div>
-            <div class="reps-count">Reps: <span id="reps-total">0</span></div>
+            <div class="reps-count">Total: <span id="reps-total">0</span></div>
         </div>
 
         <div class="images-wrapper" id="image-container">
-            <img src="images/basket.png" alt="Picture 1">
-            <img src="images/player.png" alt="Picture 2">
+            <img src="images/basket.png" alt="Basket">
+            <img src="images/player.png" alt="Player">
         </div>
 
         <div class="distance-display">
@@ -51,15 +87,26 @@
             <input type="range" id="distance-slider" min="1" max="20" value="6">
         </div>
 
-        <div class="controls">
+        <div class="controls" id="manual-distance-controls">
             <button class="icon-btn" id="btn-left">◀</button>
             <button id="btn-reset">Reset</button>
             <button class="icon-btn" id="btn-right">▶</button>
         </div>
+        
+        <div id="game-active-banner" class="game-banner d-none">
+            <div class="game-banner-top">
+                <span id="game-progress">Throw 1 / 10</span>
+                <button id="btn-quit-game" class="btn-quit">Quit</button>
+            </div>
+            <div class="game-actions-inline">
+                <button id="btn-game-miss" class="btn-game game-miss">❌ Miss</button>
+                <button id="btn-game-sink" class="btn-game game-sink">✅ Sink</button>
+            </div>
+        </div>
 
         <hr class="divider">
 
-        <div class="tracking-section">
+        <div id="normal-tracking-section" class="tracking-section">
             <div class="input-group-col">
                 <label>Discs in bag:</label>
                 <div class="number-bar" id="bag-bar">
@@ -86,6 +133,11 @@
             </div>
 
             <button id="btn-ok" class="btn-primary">OK</button>
+        </div>
+
+        <div id="game-tracking-section" class="d-none game-actions">
+            <button id="btn-game-miss" class="btn-game game-miss">Miss</button>
+            <button id="btn-game-sink" class="btn-game game-sink">Sink</button>
         </div>
 
         <hr class="divider">

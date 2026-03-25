@@ -9,25 +9,41 @@ const imageContainer = document.getElementById('image-container');
 const successDisplay = document.getElementById('success-percent');
 const repsDisplay = document.getElementById('reps-total');
 const missedDisplay = document.getElementById('missed-display');
-const statsSummaryContainer = document.getElementById('stats-summary-container'); // NEW: Scale bars container
+const statsSummaryContainer = document.getElementById('stats-summary-container');
 
-// Modal Elements
+// Top / Unit UI
 const welcomeModal = document.getElementById('welcome-modal');
 const btnCloseModal = document.getElementById('btn-close-modal');
-
-// Unit Toggle Elements
 const btnUnitToggle = document.getElementById('btn-unit-toggle');
+const btnOpenGameSetup = document.getElementById('btn-open-game-setup');
 
-// Bag Bar Buttons
+// Normal Mode UI Elements
+const normalTrackingSection = document.getElementById('normal-tracking-section');
+const manualControls = document.getElementById('manual-distance-controls');
 const numBtns = document.querySelectorAll('.num-btn');
 const btnMissedMinus = document.getElementById('missed-minus');
 const btnMissedPlus = document.getElementById('missed-plus');
+const btnOk = document.getElementById('btn-ok');
+
+// Game Mode UI Elements
+const gameSetupModal = document.getElementById('game-setup-modal');
+const gameOverModal = document.getElementById('game-over-modal');
+const gameActiveBanner = document.getElementById('game-active-banner');
+const gameProgressText = document.getElementById('game-progress');
 
 // State Variables
-let currentDistance = 6; // Always tracked internally in meters
+let currentDistance = 6; 
 let currentBag = 5;
 let currentMissed = 0;
 let isMeters = true;
+
+// Game State Variables
+let isGameMode = false;
+let gameMin = 5;
+let gameMax = 10;
+let gameTotalThrows = 10;
+let gameCurrentThrow = 1;
+let gameSessionStats = { totalThrows: 0, totalMissed: 0 };
 
 // Modal Logic
 btnCloseModal.addEventListener('click', () => {
@@ -43,29 +59,24 @@ btnUnitToggle.addEventListener('click', () => {
 
 // Update UI (Distance & Stats)
 function updateUI(distance) {
-    // 1. Calculate the Display Distance based on selected unit
     let displayDistance = distance;
     let unitStr = "m";
     
     if (!isMeters) {
-        // Convert meters to feet and round to a whole number
         displayDistance = Math.round(distance * 3.28084);
         unitStr = "ft";
     }
 
-    // Update Distance text and unit
     distanceText.innerText = displayDistance;
     distanceUnit.innerText = unitStr;
 
-    // 2. Update Slider and Visuals (these always scale based on meters 1-20)
     if (distance <= 20) distanceSlider.value = distance;
     
     const visualGap = Math.min(distance, 20);
     imageContainer.style.gap = (visualGap * 10) + "px";
 
-    // 3. Update Stats for this specific meter distance
     const data = statsData[distance] || { totalBalls: 0, totalMissed: 0, reps: 0 };
-    repsDisplay.innerText = data.reps;
+    repsDisplay.innerText = data.totalBalls; // Show total balls thrown at this distance
     
     if (data.totalBalls === 0) {
         successDisplay.innerText = "0";
@@ -74,14 +85,11 @@ function updateUI(distance) {
         successDisplay.innerText = Math.round(success);
     }
 
-    // 4. Update the visual scale bars for all distances
     renderStatsSummary();
 }
 
-// Render Scale Bars for All Played Distances
 function renderStatsSummary() {
     if (!statsSummaryContainer) return;
-
     statsSummaryContainer.innerHTML = ''; 
     
     const distances = Object.keys(statsData).map(Number).sort((a, b) => a - b);
@@ -107,8 +115,6 @@ function renderStatsSummary() {
 
         const row = document.createElement('div');
         row.className = 'stat-row';
-        
-        // Added a "stat-meta" div to hold the percentage and the y/x count
         row.innerHTML = `
             <div class="stat-label">${displayDist}${unit}</div>
             <div class="stat-bar-bg">
@@ -119,19 +125,16 @@ function renderStatsSummary() {
                 <div class="stat-count">${totalHits}/${data.totalBalls}</div>
             </div>
         `;
-        
         statsSummaryContainer.appendChild(row);
     });
 }
 
-// "My Bag" Bar Logic
+// "My Bag" Bar Logic (Normal Mode)
 numBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
         numBtns.forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
-        
         currentBag = parseInt(e.target.getAttribute('data-val'));
-        
         if (currentMissed > currentBag) {
             currentMissed = currentBag;
             missedDisplay.innerText = currentMissed;
@@ -139,7 +142,7 @@ numBtns.forEach(btn => {
     });
 });
 
-// "Missed" Counter Logic
+// "Missed" Counter Logic (Normal Mode)
 btnMissedMinus.addEventListener('click', () => {
     if (currentMissed > 0) {
         currentMissed--;
@@ -154,8 +157,129 @@ btnMissedPlus.addEventListener('click', () => {
     }
 });
 
-// OK Button - Log the Data
-document.getElementById('btn-ok').addEventListener('click', () => {
+// --- Putting Game Logic ---
+btnOpenGameSetup.addEventListener('click', () => {
+    const minInput = document.getElementById('game-min-dist');
+    const maxInput = document.getElementById('game-max-dist');
+    
+    minInput.value = isMeters ? 5 : Math.round(5 * 3.28084);
+    maxInput.value = isMeters ? 10 : Math.round(10 * 3.28084);
+    
+    document.querySelectorAll('.game-unit-label').forEach(el => {
+        el.innerText = isMeters ? 'm' : 'ft';
+    });
+    
+    gameSetupModal.classList.remove('d-none');
+});
+
+document.getElementById('btn-cancel-game').addEventListener('click', () => {
+    gameSetupModal.classList.add('d-none');
+});
+
+document.getElementById('btn-start-game').addEventListener('click', () => {
+    let minInput = parseInt(document.getElementById('game-min-dist').value);
+    let maxInput = parseInt(document.getElementById('game-max-dist').value);
+    gameTotalThrows = parseInt(document.getElementById('game-reps').value) || 18;
+
+    if (!isMeters) {
+        minInput = Math.round(minInput / 3.28084);
+        maxInput = Math.round(maxInput / 3.28084);
+    }
+    
+    gameMin = Math.max(1, Math.min(minInput, maxInput));
+    gameMax = Math.max(minInput, maxInput);
+
+    // Enter Game Mode UI
+    isGameMode = true;
+    gameCurrentThrow = 1;
+    gameSessionStats = { totalThrows: 0, totalMissed: 0 };
+    
+    gameSetupModal.classList.add('d-none');
+    btnOpenGameSetup.classList.add('d-none');
+    normalTrackingSection.classList.add('d-none');
+    
+    gameActiveBanner.classList.remove('d-none');
+    
+    setManualControlsState(true);
+    nextGameThrow();
+});
+
+document.getElementById('btn-quit-game').addEventListener('click', () => endGame(true));
+document.getElementById('btn-close-game-over').addEventListener('click', () => gameOverModal.classList.add('d-none'));
+
+function nextGameThrow() {
+    const randomDist = Math.floor(Math.random() * (gameMax - gameMin + 1)) + gameMin;
+    currentDistance = randomDist;
+    updateUI(currentDistance);
+    gameProgressText.innerText = `Throw ${gameCurrentThrow} / ${gameTotalThrows}`;
+}
+
+function recordGameThrow(isSink) {
+    if (!statsData[currentDistance]) {
+        statsData[currentDistance] = { totalBalls: 0, totalMissed: 0, reps: 0 };
+    }
+
+    // Log exactly 1 throw to the database
+    statsData[currentDistance].totalBalls += 1;
+    statsData[currentDistance].reps += 1;
+    
+    let missed = isSink ? 0 : 1;
+    statsData[currentDistance].totalMissed += missed;
+
+    gameSessionStats.totalThrows += 1;
+    gameSessionStats.totalMissed += missed;
+
+    gameCurrentThrow++;
+
+    if (gameCurrentThrow > gameTotalThrows) {
+        updateUI(currentDistance); 
+        endGame();
+    } else {
+        nextGameThrow();
+    }
+}
+
+document.getElementById('btn-game-sink').addEventListener('click', () => recordGameThrow(true));
+document.getElementById('btn-game-miss').addEventListener('click', () => recordGameThrow(false));
+
+function endGame(quitEarly = false) {
+    isGameMode = false;
+    
+    // Restore Normal UI
+    gameActiveBanner.classList.add('d-none');
+    normalTrackingSection.classList.remove('d-none');
+    btnOpenGameSetup.classList.remove('d-none');
+    setManualControlsState(false);
+    
+    // Reset to a default distance visually
+    currentDistance = 6;
+    updateUI(currentDistance);
+    
+    if (!quitEarly && gameSessionStats.totalThrows > 0) {
+        const totalHits = gameSessionStats.totalThrows - gameSessionStats.totalMissed;
+        const rate = Math.round((totalHits / gameSessionStats.totalThrows) * 100);
+        
+        document.getElementById('game-results-summary').innerHTML = `
+            Score: <span style="color:var(--text-main);">${totalHits} / ${gameSessionStats.totalThrows}</span><br>
+            Success Rate: <span style="color:var(--text-main);">${rate}%</span>
+        `;
+        gameOverModal.classList.remove('d-none');
+    }
+}
+
+function setManualControlsState(disabled) {
+    document.getElementById('btn-left').disabled = disabled;
+    document.getElementById('btn-right').disabled = disabled;
+    document.getElementById('btn-reset').disabled = disabled;
+    document.getElementById('distance-slider').disabled = disabled;
+    document.getElementById('distance-slider').style.opacity = disabled ? "0.4" : "1";
+    // Also fade the visual buttons
+    manualControls.style.opacity = disabled ? "0.4" : "1";
+    manualControls.style.pointerEvents = disabled ? "none" : "auto";
+}
+
+// OK Button (Normal Mode Save)
+btnOk.addEventListener('click', () => {
     if (!statsData[currentDistance]) {
         statsData[currentDistance] = { totalBalls: 0, totalMissed: 0, reps: 0 };
     }
@@ -164,10 +288,12 @@ document.getElementById('btn-ok').addEventListener('click', () => {
     statsData[currentDistance].totalMissed += currentMissed;
     statsData[currentDistance].reps += 1;
 
+    currentMissed = 0;
+    missedDisplay.innerText = currentMissed;
     updateUI(currentDistance);
 });
 
-// Distance Controls
+// Manual Distance Controls (Normal Mode)
 document.getElementById('btn-left').addEventListener('click', () => {
     if (currentDistance > 1) { currentDistance--; updateUI(currentDistance); }
 });
