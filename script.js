@@ -76,7 +76,9 @@ function updateUI(distance) {
     imageContainer.style.gap = (visualGap * 10) + "px";
 
     const data = statsData[distance] || { totalBalls: 0, totalMissed: 0, reps: 0 };
-    repsDisplay.innerText = data.totalBalls; // Show total balls thrown at this distance
+    
+    // MODIFIED: Now shows the "reps" count (how many times OK was clicked)
+    repsDisplay.innerText = data.reps; 
     
     if (data.totalBalls === 0) {
         successDisplay.innerText = "0";
@@ -219,12 +221,14 @@ function recordGameThrow(isSink) {
         statsData[currentDistance] = { totalBalls: 0, totalMissed: 0, reps: 0 };
     }
 
-    // Log exactly 1 throw to the database
+    // Log the throw for accuracy stats
     statsData[currentDistance].totalBalls += 1;
-    statsData[currentDistance].reps += 1;
     
     let missed = isSink ? 0 : 1;
     statsData[currentDistance].totalMissed += missed;
+
+    // We EXCLUDE statsData[currentDistance].reps += 1; 
+    // This keeps the "Reps" count frozen during Game Mode.
 
     gameSessionStats.totalThrows += 1;
     gameSessionStats.totalMissed += missed;
@@ -284,10 +288,15 @@ btnOk.addEventListener('click', () => {
         statsData[currentDistance] = { totalBalls: 0, totalMissed: 0, reps: 0 };
     }
 
+    // Logic for Normal Mode
+    // We still add the total balls and misses for the percentage calculation
     statsData[currentDistance].totalBalls += currentBag;
     statsData[currentDistance].totalMissed += currentMissed;
+    
+    // MODIFIED: This now increments by 1 per click regardless of bag size
     statsData[currentDistance].reps += 1;
 
+    // Reset current missed counter for the next set
     currentMissed = 0;
     missedDisplay.innerText = currentMissed;
     updateUI(currentDistance);
