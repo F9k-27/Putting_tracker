@@ -9,6 +9,12 @@ This tool helps you track your putting accuracy across different distances.
 Please share it with your fellow discgolfers! We are working on new features and improvements.
 [Link](https://f9k-27.github.io/Putting_tracker/) to the application.
 
+## Documentation
+
+- [index.html](docs/index.html.md) — HTML structure, element IDs, assets
+- [style.css](docs/style.css.md) — CSS variables, selectors, media queries
+- [script.js](docs/script.js.md) — Functions, state variables, event listeners
+
 ## Feedback and Suggestions
 
 If you have any feedback or suggestions, feel free to reach out via:
