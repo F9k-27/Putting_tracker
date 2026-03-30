@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Mobile-first viewport: disable pinch-zoom, support notched devices (viewport-fit=cover) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Putting Tracker</title>
     <link rel="stylesheet" href="style.css">
     <meta name="title" content="Putting Tracker">
+    <!-- Enable "Add to Home Screen" full-screen mode on Android and iOS -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,6 +15,12 @@
 </head>
 <body>
 
+    <!-- ============================================================
+         WELCOME MODAL
+         Shown on first page load. Explains how to use the app.
+         Dismissed by clicking "Got it, let's go!" which adds the
+         'hidden' class (CSS handles the fade-out transition).
+         ============================================================ -->
     <div id="welcome-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>Welcome to discgolf putting tracker</h2>
@@ -31,24 +39,35 @@
         </div>
     </div>
 
+    <!-- ============================================================
+         GAME SETUP MODAL
+         Hidden by default (d-none). Opened when the user clicks the
+         gamepad button. Collects min/max distance and total throws
+         for a game session. Unit labels update dynamically based on
+         the current meters/feet toggle.
+         ============================================================ -->
     <div id="game-setup-modal" class="modal-overlay d-none">
         <div class="modal-content">
             <h2>Putting Game Setup</h2>
             <p style="font-size: 14px; margin-bottom: 20px;">Distance changes every throw!</p>
-            
+
+            <!-- Min distance input — value and unit label set by JS based on current unit -->
             <div class="input-group-col">
                 <label>Min Distance (<span class="game-unit-label">m</span>)</label>
                 <input type="number" id="game-min-dist" class="input-style" value="5" min="1" max="35">
             </div>
+            <!-- Max distance input -->
             <div class="input-group-col">
                 <label>Max Distance (<span class="game-unit-label">m</span>)</label>
                 <input type="number" id="game-max-dist" class="input-style" value="10" min="1" max="35">
             </div>
+            <!-- Total throws per game session -->
             <div class="input-group-col">
                 <label>Total Throws</label>
                 <input type="number" id="game-reps" class="input-style" value="10" min="1" max="100">
             </div>
-            
+
+            <!-- Cancel returns to normal mode; Start begins the game -->
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-cancel-game" class="btn-secondary">Cancel</button>
                 <button id="btn-start-game" class="btn-primary" style="margin-top: 0;">Start Game</button>
@@ -56,57 +75,105 @@
         </div>
     </div>
 
+    <!-- ============================================================
+         GAME OVER MODAL
+         Hidden by default (d-none). Shown after all game throws are
+         completed. Displays score (hits/total) and success rate %.
+         The #game-results-summary div is populated by JS.
+         ============================================================ -->
     <div id="game-over-modal" class="modal-overlay d-none">
         <div class="modal-content">
             <h2>Game Finished!</h2>
+            <!-- JS populates this with score and success rate -->
             <div id="game-results-summary" style="font-size: 18px; margin: 20px 0; font-weight: bold; color: var(--accent-blue-hover);"></div>
             <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">Your overall stats have been updated.</p>
             <button id="btn-close-game-over" class="btn-primary">Awesome!</button>
         </div>
     </div>
 
+    <!-- ============================================================
+         MAIN APPLICATION CONTAINER
+         Max-width 480px, centered. Full-bleed on mobile, card style
+         on tablet/desktop (handled by CSS media query at 520px).
+         ============================================================ -->
     <div class="container">
+
+        <!-- Top-left: opens game setup modal -->
         <button id="btn-open-game-setup" class="game-toggle-btn">🎮</button>
+        <!-- Top-right: toggles between meters and feet display -->
         <button id="btn-unit-toggle" class="unit-toggle">Unit: Meters</button>
 
+        <!-- ── Stats Header ──
+             Shows success % and reps count for the CURRENT distance.
+             Updated dynamically by updateUI() in script.js. -->
         <div class="stats-header">
             <div class="bolt-percent">Success: <span id="success-percent">0</span>%</div>
-            <div class="reps-count">Reps: <span id="reps-total">0</span></div>
+            <div class="reps-count">Total: <span id="reps-total">0</span></div>
         </div>
 
+        <!-- ── Visual Distance Representation ──
+             Two images (basket + player) with a CSS gap that grows
+             as distance increases (max visual gap at 20m = 200px).
+             Controlled by updateUI() setting imageContainer.style.gap. -->
         <div class="images-wrapper" id="image-container">
             <img src="images/basket.png" alt="Basket">
             <img src="images/player.png" alt="Player">
         </div>
 
+        <!-- ── Distance Display ──
+             Large text showing current distance + unit (e.g., "10m" or "33ft").
+             Both spans updated by updateUI(). -->
         <div class="distance-display">
             <span id="distance-text">6</span><span id="distance-unit">m</span>
         </div>
 
+        <!-- ── Distance Slider ──
+             Range input for distances 1-20m. Distances 21-35m are only
+             reachable via the arrow buttons below. Slider syncs with
+             currentDistance when distance <= 20. -->
         <div class="slider-container">
             <input type="range" id="distance-slider" min="1" max="20" value="6">
         </div>
 
+        <!-- ── Manual Distance Controls ──
+             Left/Right arrows for fine-tuning distance (full range 1-35).
+             Reset returns to distance 6. Disabled during game mode via
+             setManualControlsState(). -->
         <div class="controls" id="manual-distance-controls">
-            <button class="icon-btn" id="btn-left">◀</button>
+            <button class="icon-btn" id="btn-left">&#9664;</button>
             <button id="btn-reset">Reset</button>
-            <button class="icon-btn" id="btn-right">▶</button>
+            <button class="icon-btn" id="btn-right">&#9654;</button>
         </div>
-        
+
+        <!-- ── Game Active Banner ──
+             Visible only during an active game session (d-none toggled by JS).
+             Shows current throw progress, quit button, and miss/sink buttons. -->
         <div id="game-active-banner" class="game-banner d-none">
             <div class="game-banner-top">
+                <!-- e.g., "Throw 3 / 10" — updated each round by nextGameThrow() -->
                 <span id="game-progress">Throw 1 / 10</span>
                 <button id="btn-quit-game" class="btn-quit">Quit</button>
             </div>
             <div class="game-actions-inline">
-                <button id="btn-game-miss" class="btn-game game-miss">❌ Miss</button>
-                <button id="btn-game-sink" class="btn-game game-sink">✅ Sink</button>
+                <!-- Miss: records a missed throw for this distance -->
+                <button id="btn-game-miss" class="btn-game game-miss">&#10060; Miss</button>
+                <!-- Sink: records a successful throw for this distance -->
+                <button id="btn-game-sink" class="btn-game game-sink">&#9989; Sink</button>
             </div>
         </div>
 
         <hr class="divider">
 
+        <!-- ============================================================
+             NORMAL TRACKING SECTION
+             Visible in normal (non-game) mode. User selects disc count,
+             sets how many were missed, then clicks OK to save stats.
+             Hidden during game mode.
+             ============================================================ -->
         <div id="normal-tracking-section" class="tracking-section">
+
+            <!-- Disc count selector: 1-10 buttons. Default active = 5.
+                 Clicking a button sets currentBag and highlights it. -->
             <div class="input-group-col">
                 <label>Discs in bag:</label>
                 <div class="number-bar" id="bag-bar">
@@ -123,6 +190,7 @@
                 </div>
             </div>
 
+            <!-- Missed counter: +/- buttons with display. Capped at currentBag. -->
             <div class="input-group-col">
                 <label>How many missed?</label>
                 <div class="counter-group">
@@ -132,9 +200,13 @@
                 </div>
             </div>
 
+            <!-- OK button: saves currentBag and currentMissed to statsData
+                 for the current distance, increments reps, resets missed to 0 -->
             <button id="btn-ok" class="btn-primary">OK</button>
         </div>
 
+        <!-- Duplicate game tracking section (unused in current flow —
+             game actions are inside game-active-banner instead) -->
         <div id="game-tracking-section" class="d-none game-actions">
             <button id="btn-game-miss" class="btn-game game-miss">Miss</button>
             <button id="btn-game-sink" class="btn-game game-sink">Sink</button>
@@ -142,16 +214,27 @@
 
         <hr class="divider">
 
+        <!-- ── Stats Summary ──
+             Populated by renderStatsSummary() in script.js.
+             Displays horizontal bar charts for each logged distance
+             showing success rate, percentage, and hit/total count. -->
         <div id="stats-summary-container" class="stats-summary"></div>
 
         <hr class="divider">
 
+        <!-- ── Data Import/Export ──
+             Download: exports statsData as a dated JSON file.
+             Upload: hidden file input triggered by the styled label;
+             accepts .json files and replaces current statsData. -->
         <div class="data-section">
             <button id="btn-download" class="btn-secondary">Download Stats</button>
             <label for="upload-json" class="btn-secondary upload-label">Upload Stats</label>
             <input type="file" id="upload-json" accept=".json" style="display: none;">
         </div>
 
+        <!-- ── About Section ──
+             Project info, feedback links (GitHub Issues + Google Form),
+             and PayPal donation QR code. -->
         <div class="about-section">
             <p><strong>About Putting tracker</strong></p>
             <p>This tool helps you track your putting accuracy across different distances. Please share it with your fellow discgolfers! We are working on new features and improvements.</p>
@@ -161,7 +244,7 @@
             <div class="support-box">
                 <p><strong>Like this project?</strong></p>
                 <p>
-                    Support future development via 
+                    Support future development via
                     <a href="https://www.paypal.com/donate/?hosted_button_id=ULEZTSWZFVPSG" target="_blank">PayPal</a>:
                 </p>
                 <img src="images/qrcode.png" alt="PayPal QR Code" class="support-qr">
@@ -169,6 +252,7 @@
         </div>
     </div>
 
+    <!-- Main application logic — loaded after DOM is ready -->
     <script src="script.js"></script>
 </body>
 </html>
