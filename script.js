@@ -232,6 +232,336 @@ function pickRandomStance(distance) {
 
 
 /* ==========================================================================
+   AIM / TARGET TRACKER  (crosshair toggle)
+
+   When active, the basket+player visual is replaced by a large clickable
+   basket. The user taps to mark where each disc landed; after `currentBag`
+   marks the "set" is committed to targetData (keyed by distance) and the
+   markers reset for the next set.
+
+   Data is session-only (in memory) — it is NOT written to the JSON
+   download/upload, keeping that format unchanged. It powers the End
+   Practice heatmaps.
+
+   targetData shape: { [distanceMeters]: [ { x, y }, ... ] }
+   where x/y are normalized 0..1 positions within the basket image.
+   ========================================================================== */
+
+// -- Target tracker DOM refs --
+const btnToggleTarget = document.getElementById('btn-toggle-target');   // Crosshair toggle
+const landingModal = document.getElementById('landing-modal');          // Landing-input popup
+const landingDistanceLabel = document.getElementById('landing-distance'); // Distance shown in popup
+const btnLandingDone = document.getElementById('btn-landing-done');     // Finish/close popup
+const targetBasket = document.getElementById('target-basket');          // Clickable basket wrapper
+const targetMarkers = document.getElementById('target-markers');        // Marker dots overlay
+const targetProgress = document.getElementById('target-progress');      // "Marks: n / bag" line
+
+// -- Heatmap DOM refs --
+const heatmapModal = document.getElementById('heatmap-modal');
+const heatmapModalContent = document.getElementById('heatmap-modal-content');
+
+// -- Target tracker state --
+let isTargetMode = false;   // Whether crosshair mode is armed (records landings after OK)
+let targetData = {};        // Session-only landing positions, keyed by distance
+let currentSet = [];        // Marks placed in the currently-open landing popup
+let landingDistance = 6;    // Distance captured when the popup opened
+let landingBag = 5;         // Number of marks expected (bag size at OK time)
+
+/**
+ * Arms or disarms crosshair mode. This no longer changes the main screen —
+ * the basket/player visual and distance controls stay put. When armed, the
+ * landing-input popup opens after the user clicks OK.
+ */
+function setTargetMode(on) {
+    isTargetMode = on;
+    btnToggleTarget.classList.toggle('active', on);
+    btnToggleTarget.setAttribute('aria-pressed', String(on));
+}
+
+// Crosshair toggle — unavailable during a game session
+btnToggleTarget.addEventListener('click', () => {
+    if (isGameMode) return;
+    setTargetMode(!isTargetMode);
+});
+
+/** Updates the "Marks: n / bag" progress readout in the popup. */
+function updateTargetProgress() {
+    targetProgress.innerText = `Marks: ${currentSet.length} / ${landingBag}`;
+}
+
+/** Rebuilds the marker dots from the current in-progress set. */
+function renderMarkers() {
+    targetMarkers.innerHTML = '';
+    currentSet.forEach(p => {
+        const dot = document.createElement('div');
+        dot.className = 'target-marker';
+        dot.style.left = (p.x * 100) + '%';
+        dot.style.top = (p.y * 100) + '%';
+        targetMarkers.appendChild(dot);
+    });
+}
+
+/**
+ * Opens the landing-input popup for the current distance/bag.
+ * Called from the OK handler when crosshair mode is armed.
+ */
+function openLandingModal() {
+    landingDistance = currentDistance;
+    landingBag = currentBag;
+    currentSet = [];
+    renderMarkers();
+    updateTargetProgress();
+    landingDistanceLabel.textContent = formatDistance(landingDistance);
+    landingModal.classList.remove('d-none');
+}
+
+/**
+ * Stores whatever marks were placed into targetData for the captured
+ * distance, then closes the popup. Safe to call with zero marks.
+ */
+function commitLanding() {
+    if (currentSet.length) {
+        if (!targetData[landingDistance]) targetData[landingDistance] = [];
+        targetData[landingDistance].push(...currentSet);
+    }
+    currentSet = [];
+    landingModal.classList.add('d-none');
+    renderMarkers();
+}
+
+// Tap the basket to record a landing position (only while the popup is open)
+targetBasket.addEventListener('click', (e) => {
+    if (landingModal.classList.contains('d-none')) return;
+    if (currentSet.length >= landingBag) return; // all discs already marked
+
+    const rect = targetBasket.getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height));
+
+    currentSet.push({ x, y });
+    renderMarkers();
+    updateTargetProgress();
+
+    // Auto-finish once every disc has been placed
+    if (currentSet.length >= landingBag) commitLanding();
+});
+
+// "Done" — commit early (fewer marks than bag) and close
+btnLandingDone.addEventListener('click', commitLanding);
+
+
+/* ==========================================================================
+   HEATMAP RENDERING
+
+   A lightweight density heatmap drawn on a <canvas> overlaid on the basket
+   image. The canvas only ever draws our own gradients (never the basket
+   image itself), so getImageData() stays untainted even under file://.
+   ========================================================================== */
+
+/** Maps intensity t (0..1) to a blue→cyan→green→yellow→red heat color. */
+function heatColor(t) {
+    const stops = [
+        [0.00, [0, 0, 255]],
+        [0.25, [0, 255, 255]],
+        [0.50, [0, 255, 0]],
+        [0.75, [255, 255, 0]],
+        [1.00, [255, 0, 0]],
+    ];
+    for (let i = 1; i < stops.length; i++) {
+        if (t <= stops[i][0]) {
+            const [t0, c0] = stops[i - 1];
+            const [t1, c1] = stops[i];
+            const f = (t - t0) / (t1 - t0);
+            return [
+                Math.round(c0[0] + f * (c1[0] - c0[0])),
+                Math.round(c0[1] + f * (c1[1] - c0[1])),
+                Math.round(c0[2] + f * (c1[2] - c0[2])),
+            ];
+        }
+    }
+    return [255, 0, 0];
+}
+
+/** Draws a density heatmap of normalized points onto the given canvas. */
+function drawHeatmap(canvas, points, radiusFactor = 0.14) {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    if (!points.length) return;
+
+    const radius = Math.max(w, h) * radiusFactor;
+
+    // 1) Accumulate grayscale intensity with additive radial gradients
+    points.forEach(p => {
+        const px = p.x * w, py = p.y * h;
+        const g = ctx.createRadialGradient(px, py, 0, px, py, radius);
+        g.addColorStop(0, 'rgba(0,0,0,0.35)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // 2) Colorize each pixel by its accumulated alpha
+    const img = ctx.getImageData(0, 0, w, h);
+    const d = img.data;
+    let maxA = 1;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > maxA) maxA = d[i];
+    for (let i = 0; i < d.length; i += 4) {
+        const a = d[i + 3];
+        if (a === 0) continue;
+        const [r, g, b] = heatColor(Math.min(a / maxA, 1));
+        d[i] = r; d[i + 1] = g; d[i + 2] = b;
+        d[i + 3] = Math.min(255, Math.round(a * 1.4));
+    }
+    ctx.putImageData(img, 0, 0);
+}
+
+/** Builds a basket image with an overlaid heatmap canvas and optional labels. */
+function makeHeatmapWrap(densityPoints, labelPoints) {
+    const wrap = document.createElement('div');
+    wrap.className = 'heatmap-wrap';
+
+    const img = document.createElement('img');
+    img.src = 'images/Basketbig.png';
+    img.alt = 'Basket';
+    img.onerror = function () { this.onerror = null; this.src = 'images/basket.png'; };
+    wrap.appendChild(img);
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'heatmap-canvas';
+    canvas.width = 260;
+    canvas.height = 260;
+    drawHeatmap(canvas, densityPoints);   // Detached canvas draws fine
+    wrap.appendChild(canvas);
+
+    (labelPoints || []).forEach(lp => {
+        const label = document.createElement('div');
+        label.className = 'heatmap-label';
+        label.style.left = (lp.x * 100) + '%';
+        label.style.top = (lp.y * 100) + '%';
+        label.textContent = lp.text;
+        wrap.appendChild(label);
+    });
+
+    return wrap;
+}
+
+/** Mean (centroid) of a set of normalized points. */
+function centroid(points) {
+    let sx = 0, sy = 0;
+    points.forEach(p => { sx += p.x; sy += p.y; });
+    return { x: sx / points.length, y: sy / points.length };
+}
+
+/** Mean distance of points from a center — a grouping-spread measure. */
+function dispersion(points, c) {
+    if (points.length < 2) return 0;
+    let s = 0;
+    points.forEach(p => { s += Math.hypot(p.x - c.x, p.y - c.y); });
+    return s / points.length;
+}
+
+/** Returns sorted list of distances that have landing marks. */
+function distancesWithMarks() {
+    return Object.keys(targetData)
+        .map(Number)
+        .filter(d => targetData[d] && targetData[d].length)
+        .sort((a, b) => a - b);
+}
+
+/**
+ * Appends the aggregate "landing heatmap" (all marks) with per-distance
+ * average-position labels, plus a button to open the per-distance modal.
+ * Called at the end of renderPracticeSummary(). No-op if no marks exist.
+ */
+function renderSummaryHeatmap() {
+    const distances = distancesWithMarks();
+    if (!distances.length) return;
+
+    const allMarks = [];
+    const labelPoints = [];
+    distances.forEach(d => {
+        targetData[d].forEach(p => allMarks.push(p));
+        const c = centroid(targetData[d]);
+        labelPoints.push({ x: c.x, y: c.y, text: formatDistance(d) });
+    });
+
+    const title = document.createElement('div');
+    title.className = 'heatmap-section-title';
+    title.textContent = `Landing Heatmap (${allMarks.length} marks)`;
+    practiceSummaryContent.appendChild(title);
+
+    const caption = document.createElement('p');
+    caption.style.cssText = 'font-size:12px;color:var(--text-muted);margin:0 0 6px;';
+    caption.textContent = 'Labels show your average landing spot per distance.';
+    practiceSummaryContent.appendChild(caption);
+
+    practiceSummaryContent.appendChild(makeHeatmapWrap(allMarks, labelPoints));
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-secondary';
+    btn.style.cssText = 'width:100%;margin-top:12px;';
+    btn.textContent = 'Per-distance heatmaps & stats';
+    btn.addEventListener('click', () => {
+        renderDistanceHeatmaps();
+        heatmapModal.classList.remove('d-none');
+    });
+    practiceSummaryContent.appendChild(btn);
+}
+
+/** Renders one heatmap + grouping stats block per practiced distance. */
+function renderDistanceHeatmaps() {
+    heatmapModalContent.innerHTML = '';
+    const distances = distancesWithMarks();
+
+    if (!distances.length) {
+        heatmapModalContent.innerHTML = '<p class="empty-stats">No landing marks recorded yet.</p>';
+        return;
+    }
+
+    distances.forEach(d => {
+        const marks = targetData[d];
+        const c = centroid(marks);
+        const spread = dispersion(marks, c);
+
+        const block = document.createElement('div');
+        block.className = 'heat-block';
+
+        const h = document.createElement('h3');
+        h.textContent = `${formatDistance(d)} · ${marks.length} marks`;
+        block.appendChild(h);
+
+        block.appendChild(makeHeatmapWrap(marks, [{ x: c.x, y: c.y, text: 'avg' }]));
+
+        // Directional bias (assumes basket center ≈ 0.5, 0.5) and a
+        // consistency score derived from how tight the grouping is.
+        const horiz = c.x < 0.45 ? 'left' : c.x > 0.55 ? 'right' : 'center';
+        const vert = c.y < 0.45 ? 'high' : c.y > 0.55 ? 'low' : 'center';
+        const consistency = Math.max(0, Math.round((1 - Math.min(spread / 0.35, 1)) * 100));
+
+        const stats = document.createElement('div');
+        stats.className = 'heat-stats';
+        stats.innerHTML = `
+            <span>Marks: <b>${marks.length}</b></span>
+            <span>Consistency: <b>${consistency}%</b></span>
+            <span>Horizontal: <b>${horiz}</b></span>
+            <span>Vertical: <b>${vert}</b></span>
+        `;
+        block.appendChild(stats);
+
+        heatmapModalContent.appendChild(block);
+    });
+}
+
+// Close the per-distance heatmap modal
+document.getElementById('btn-close-heatmap').addEventListener('click', () => {
+    heatmapModal.classList.add('d-none');
+});
+
+
+/* ==========================================================================
    STATS SUMMARY BAR CHART
 
    Rebuilds the per-distance bar chart from scratch on every call.
@@ -380,6 +710,9 @@ document.getElementById('btn-start-game').addEventListener('click', () => {
     let maxInput = parseInt(document.getElementById('game-max-dist').value);
     gameTotalThrows = parseInt(document.getElementById('game-reps').value) || 18;
 
+    // Leave target (crosshair) mode if it was active — game uses the visual basket
+    if (isTargetMode) setTargetMode(false);
+
     // Convert feet input back to meters for internal storage
     if (!isMeters) {
         minInput = Math.round(minInput / 3.28084);
@@ -398,6 +731,7 @@ document.getElementById('btn-start-game').addEventListener('click', () => {
     // Transition UI: hide normal mode, show game banner
     gameSetupModal.classList.add('d-none');
     btnOpenGameSetup.classList.add('d-none');
+    btnToggleTarget.classList.add('d-none');   // Hide accuracy toggle during a game
     normalTrackingSection.classList.add('d-none');
     gameActiveBanner.classList.remove('d-none');
 
@@ -496,6 +830,7 @@ function endGame(quitEarly = false) {
     gameStanceDisplay.classList.add('d-none');
     normalTrackingSection.classList.remove('d-none');
     btnOpenGameSetup.classList.remove('d-none');
+    btnToggleTarget.classList.remove('d-none');   // Restore accuracy toggle after the game
     setManualControlsState(false);
 
     // Reset to default distance
@@ -560,6 +895,9 @@ btnOk.addEventListener('click', () => {
     currentMissed = 0;
     missedDisplay.innerText = currentMissed;
     updateUI(currentDistance);
+
+    // If crosshair mode is armed, prompt for where each disc landed
+    if (isTargetMode) openLandingModal();
 });
 
 
@@ -628,10 +966,16 @@ function renderPracticeSummary() {
         .filter(d => statsData[d] && statsData[d].totalBalls > 0)
         .sort((a, b) => a - b);
 
-    // No data yet — show a friendly placeholder
+    // No normal-mode data — but target-mode marks may still exist
     if (distances.length === 0) {
-        practiceSummaryContent.innerHTML =
-            '<p class="empty-stats">No putts logged yet. Go throw some discs!</p>';
+        if (distancesWithMarks().length === 0) {
+            practiceSummaryContent.innerHTML =
+                '<p class="empty-stats">No putts logged yet. Go throw some discs!</p>';
+        } else {
+            practiceSummaryContent.innerHTML =
+                '<p class="empty-stats">No counted putts — showing your landing marks.</p>';
+            renderSummaryHeatmap();
+        }
         return;
     }
 
@@ -709,6 +1053,9 @@ function renderPracticeSummary() {
         <div class="summary-grid">${cardsHtml}</div>
         <div class="summary-highlights">${highlightsHtml}</div>
     `;
+
+    // Append the landing heatmap section if any target marks were recorded
+    renderSummaryHeatmap();
 }
 
 // Open the summary modal (rebuild content first so it's up to date)

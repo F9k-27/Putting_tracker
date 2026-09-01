@@ -107,6 +107,197 @@ body {
 
 .game-toggle-btn:active { opacity: 0.7; }
 
+/* Crosshair / aim-tracker toggle (top-left, right of the game button).
+   Checkable: white by default, blue when active. */
+.target-toggle-btn {
+    position: absolute;
+    top: 12px;
+    left: 60px;                   /* Sits just right of the 40px game button at left:12px */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);   /* White default */
+    font-size: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    padding: 0;
+    touch-action: manipulation;
+}
+
+.target-toggle-btn:active { opacity: 0.7; }
+
+/* Active (checked) state — blue background */
+.target-toggle-btn.active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+/* ==========================================================================
+   AIM / TARGET TRACKER
+   Big clickable basket where the user marks where each disc landed.
+   ========================================================================== */
+.target-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* Instruction / feedback line above the basket */
+.target-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+    font-weight: 600;
+    text-align: center;
+    min-height: 18px;
+}
+
+/* Feedback flash when a set is saved */
+.target-hint.saved { color: #00b894; }
+
+/* Relative wrapper so marker dots can be absolutely positioned over the image */
+.target-basket {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    cursor: crosshair;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* The big basket target image */
+.target-basket img {
+    display: block;
+    width: auto;
+    height: clamp(180px, 55vw, 300px);
+    object-fit: contain;
+    pointer-events: none;         /* Clicks handled by the wrapper */
+}
+
+/* Overlay that holds the marker dots (covers the image exactly) */
+.target-markers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* A single landing marker */
+.target-marker {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;        /* Center the dot on its coordinate */
+    border-radius: 50%;
+    background: rgba(214, 48, 49, 0.85);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    animation: markpop 0.15s ease-out;
+}
+
+@keyframes markpop {
+    from { transform: scale(0.2); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+/* Subtitle inside the landing-input popup */
+.landing-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+}
+.landing-sub span { font-weight: 700; color: var(--accent-blue-hover); }
+
+/* "Marks: n / bag" progress line under the basket */
+.target-progress {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-blue-hover);
+}
+
+/* ==========================================================================
+   HEATMAP (End Practice)
+   Basket image with a colored density canvas overlaid.
+   ========================================================================== */
+.heatmap-wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    margin: 6px auto;
+    max-width: 100%;
+}
+
+.heatmap-wrap img {
+    display: block;
+    width: auto;
+    height: clamp(160px, 48vw, 260px);
+    object-fit: contain;
+}
+
+/* Density canvas sits exactly over the basket image */
+.heatmap-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* Small distance label pinned onto the "average positions" heatmap */
+.heatmap-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(45, 52, 54, 0.85);
+    padding: 1px 5px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Section heading inside the summary / heatmap modal */
+.heatmap-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 18px 0 4px;
+}
+
+/* One distance block in the per-distance heatmap modal */
+.heat-block {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+.heat-block h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: var(--accent-blue-hover);
+}
+
+/* Grouping stats grid beneath each per-distance heatmap */
+.heat-stats {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.heat-stats b { color: var(--text-main); font-size: 13px; }
+
 /* ==========================================================================
    STATS HEADER
    Displays success % (left) and reps count (right) for the current distance.

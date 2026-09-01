@@ -1,15 +1,15 @@
 # style.css — Auto-Generated Documentation
 
-> Generated on 2026-09-01 19:32:46
+> Generated on 2026-09-01 20:10:12
 
 ## Summary
 
 | Metric | Count |
 |---|---|
-| Total lines | 842 |
+| Total lines | 1033 |
 | Custom properties | 7 |
-| Selectors | 68 |
-| Section comments | 29 |
+| Selectors | 86 |
+| Section comments | 31 |
 | Media queries | 1 |
 
 ## CSS Custom Properties (Theme)
@@ -32,29 +32,31 @@
 - **Line 28:** Base Typography & Page Setup
 - **Line 50:** Main Container
 - **Line 65:** =
-- **Line 110:** =
-- **Line 129:** =
-- **Line 149:** Distance Number Display
-- **Line 158:** =
-- **Line 213:** =
-- **Line 231:** Horizontal Divider
-- **Line 234:** =
-- **Line 255:** =
-- **Line 287:** =
-- **Line 317:** =
-- **Line 339:** Primary Call-to-Action Button
-- **Line 355:** =
-- **Line 382:** =
-- **Line 400:** =
+- **Line 138:** =
+- **Line 223:** =
+- **Line 301:** =
+- **Line 320:** =
+- **Line 340:** Distance Number Display
+- **Line 349:** =
+- **Line 404:** =
+- **Line 422:** Horizontal Divider
+- **Line 425:** =
+- **Line 446:** =
 - **Line 478:** =
-- **Line 509:** Checkbox Row (game setup: randomize stance)
-- **Line 528:** Random stance line inside the game banner
-- **Line 540:** =
-- **Line 613:** =
-- **Line 685:** =
-- **Line 705:** =
-- **Line 786:** =
-- **Line 834:** Support QR Code
+- **Line 508:** =
+- **Line 530:** Primary Call-to-Action Button
+- **Line 546:** =
+- **Line 573:** =
+- **Line 591:** =
+- **Line 669:** =
+- **Line 700:** Checkbox Row (game setup: randomize stance)
+- **Line 719:** Random stance line inside the game banner
+- **Line 731:** =
+- **Line 804:** =
+- **Line 876:** =
+- **Line 896:** =
+- **Line 977:** =
+- **Line 1025:** Support QR Code
 
 ## Selectors
 
@@ -66,69 +68,87 @@
 | `.container` | 53 |
 | `.unit-toggle` | 71 |
 | `.game-toggle-btn` | 90 |
-| `.stats-header` | 115 |
-| `.images-wrapper` | 134 |
-| `.images-wrapper img` | 143 |
-| `.distance-display` | 152 |
-| `input[type=range]` | 167 |
-| `input[type=range]::-webkit-slider-runnable-track` | 177 |
-| `input[type=range]::-webkit-slider-thumb` | 184 |
-| `input[type=range]::-moz-range-track` | 197 |
-| `input[type=range]::-moz-range-thumb` | 204 |
-| `.controls` | 217 |
-| `.controls button` | 225 |
-| `.input-group-col` | 239 |
-| `.input-group-col label` | 247 |
-| `.number-bar` | 259 |
-| `.num-btn` | 267 |
-| `.counter-group` | 291 |
-| `.counter-btn` | 298 |
-| `#missed-display` | 311 |
-| `button` | 322 |
-| `.btn-primary` | 341 |
-| `.btn-secondary` | 362 |
-| `.about-section` | 386 |
-| `.stats-summary` | 405 |
-| `.empty-stats` | 414 |
-| `.stat-label` | 426 |
-| `.stat-bar-bg` | 436 |
-| `.stat-bar-fill` | 446 |
-| `.stat-meta` | 454 |
-| `.stat-percent` | 463 |
-| `.stat-count` | 472 |
-| `.stance-toggle-btn` | 484 |
-| `.stance-toggle-btn.active` | 500 |
-| `.checkbox-row` | 510 |
-| `.checkbox-row input[type="checkbox"]` | 521 |
-| `.game-stance` | 529 |
-| `.summary-grid` | 548 |
-| `.summary-card` | 556 |
-| `.summary-value` | 565 |
-| `.summary-label` | 573 |
-| `.summary-highlights` | 582 |
-| `.summary-highlight` | 591 |
-| `.summary-highlight-label` | 601 |
-| `.summary-highlight-value` | 607 |
-| `.modal-overlay` | 620 |
-| `.modal-overlay.hidden` | 635 |
-| `.modal-content` | 641 |
-| `.modal-content::before` | 656 |
-| `.modal-content h2` | 667 |
-| `.modal-instructions` | 676 |
-| `.input-style` | 693 |
-| `.game-banner` | 710 |
-| `.game-banner-top` | 723 |
-| `.game-banner span` | 731 |
-| `.btn-quit` | 738 |
-| `.game-actions-inline` | 753 |
-| `.btn-game` | 760 |
-| `body` | 792 |
-| `.container` | 798 |
-| `.modal-overlay` | 806 |
-| `.modal-content` | 812 |
-| `button:hover` | 822 |
-| `.support-qr` | 836 |
+| `.target-toggle-btn` | 112 |
+| `.target-toggle-btn.active` | 133 |
+| `.target-area` | 142 |
+| `.target-hint` | 150 |
+| `.target-basket` | 163 |
+| `.target-basket img` | 174 |
+| `.target-markers` | 183 |
+| `.target-marker` | 190 |
+| `.landing-sub` | 208 |
+| `.target-progress` | 216 |
+| `.heatmap-wrap` | 227 |
+| `.heatmap-wrap img` | 235 |
+| `.heatmap-canvas` | 243 |
+| `.heatmap-label` | 252 |
+| `.heatmap-section-title` | 266 |
+| `.heat-block` | 274 |
+| `.heat-block h3` | 282 |
+| `.heat-stats` | 289 |
+| `.stats-header` | 306 |
+| `.images-wrapper` | 325 |
+| `.images-wrapper img` | 334 |
+| `.distance-display` | 343 |
+| `input[type=range]` | 358 |
+| `input[type=range]::-webkit-slider-runnable-track` | 368 |
+| `input[type=range]::-webkit-slider-thumb` | 375 |
+| `input[type=range]::-moz-range-track` | 388 |
+| `input[type=range]::-moz-range-thumb` | 395 |
+| `.controls` | 408 |
+| `.controls button` | 416 |
+| `.input-group-col` | 430 |
+| `.input-group-col label` | 438 |
+| `.number-bar` | 450 |
+| `.num-btn` | 458 |
+| `.counter-group` | 482 |
+| `.counter-btn` | 489 |
+| `#missed-display` | 502 |
+| `button` | 513 |
+| `.btn-primary` | 532 |
+| `.btn-secondary` | 553 |
+| `.about-section` | 577 |
+| `.stats-summary` | 596 |
+| `.empty-stats` | 605 |
+| `.stat-label` | 617 |
+| `.stat-bar-bg` | 627 |
+| `.stat-bar-fill` | 637 |
+| `.stat-meta` | 645 |
+| `.stat-percent` | 654 |
+| `.stat-count` | 663 |
+| `.stance-toggle-btn` | 675 |
+| `.stance-toggle-btn.active` | 691 |
+| `.checkbox-row` | 701 |
+| `.checkbox-row input[type="checkbox"]` | 712 |
+| `.game-stance` | 720 |
+| `.summary-grid` | 739 |
+| `.summary-card` | 747 |
+| `.summary-value` | 756 |
+| `.summary-label` | 764 |
+| `.summary-highlights` | 773 |
+| `.summary-highlight` | 782 |
+| `.summary-highlight-label` | 792 |
+| `.summary-highlight-value` | 798 |
+| `.modal-overlay` | 811 |
+| `.modal-overlay.hidden` | 826 |
+| `.modal-content` | 832 |
+| `.modal-content::before` | 847 |
+| `.modal-content h2` | 858 |
+| `.modal-instructions` | 867 |
+| `.input-style` | 884 |
+| `.game-banner` | 901 |
+| `.game-banner-top` | 914 |
+| `.game-banner span` | 922 |
+| `.btn-quit` | 929 |
+| `.game-actions-inline` | 944 |
+| `.btn-game` | 951 |
+| `body` | 983 |
+| `.container` | 989 |
+| `.modal-overlay` | 997 |
+| `.modal-content` | 1003 |
+| `button:hover` | 1013 |
+| `.support-qr` | 1027 |
 
 ## Media Queries
 
-- **Line 790:** `@media (min-width: 520px)`
+- **Line 981:** `@media (min-width: 520px)`

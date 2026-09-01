@@ -1,16 +1,16 @@
 # script.js — Auto-Generated Documentation
 
-> Generated on 2026-09-01 19:32:46
+> Generated on 2026-09-01 20:10:12
 
 ## Summary
 
 | Metric | Count |
 |---|---|
-| Total lines | 782 |
-| Functions | 11 |
-| Variables (top-level) | 44 |
-| Event listeners | 23 |
-| Section comments | 18 |
+| Total lines | 1129 |
+| Functions | 24 |
+| Variables (top-level) | 58 |
+| Event listeners | 28 |
+| Section comments | 20 |
 
 ## Sections
 
@@ -22,16 +22,18 @@
 - **Line 117:** UNIT TOGGLE
 - **Line 129:** CORE UI UPDATE FUNCTION
 - **Line 184:** STANCE SELECTOR
-- **Line 234:** STATS SUMMARY BAR CHART
-- **Line 291:** DISC COUNT SELECTION (Normal Mode)
-- **Line 318:** MISSED COUNTER (Normal Mode)
-- **Line 339:** GAME MODE — SETUP & FLOW
-- **Line 537:** OK BUTTON — NORMAL MODE SAVE
-- **Line 566:** MANUAL DISTANCE CONTROLS (Normal Mode)
-- **Line 595:** PRACTICE SUMMARY
-- **Line 726:** JSON DATA EXPORT (Download)
-- **Line 749:** JSON DATA IMPORT (Upload)
-- **Line 777:** INITIALIZATION
+- **Line 234:** AIM / TARGET TRACKER  (crosshair toggle)
+- **Line 353:** HEATMAP RENDERING
+- **Line 564:** STATS SUMMARY BAR CHART
+- **Line 621:** DISC COUNT SELECTION (Normal Mode)
+- **Line 648:** MISSED COUNTER (Normal Mode)
+- **Line 669:** GAME MODE — SETUP & FLOW
+- **Line 872:** OK BUTTON — NORMAL MODE SAVE
+- **Line 904:** MANUAL DISTANCE CONTROLS (Normal Mode)
+- **Line 933:** PRACTICE SUMMARY
+- **Line 1073:** JSON DATA EXPORT (Download)
+- **Line 1096:** JSON DATA IMPORT (Upload)
+- **Line 1124:** INITIALIZATION
 
 ## Functions
 
@@ -41,13 +43,26 @@
 | `updateStanceOptions` | `_none_` | 195 |  |
 | `stanceLabel` | `value` | 222 | Returns the human-readable label for a stance value. */ |
 | `pickRandomStance` | `distance` | 228 | Picks a random stance valid for the given distance (respects the >10 m rule). */ |
-| `renderStatsSummary` | `_none_` | 241 |  |
-| `nextGameThrow` | `_none_` | 425 | Picks a random distance between gameMin and gameMax (inclusive), updates the UI, and displays the throw counter. |
-| `recordGameThrow` | `isSink` | 449 | Records a single throw during game mode. Key design choice: reps is NOT incremented during game mode. This keeps the reps counter as a "focused practi |
-| `endGame` | `quitEarly = false` | 491 | Ends the current game session and restores normal mode UI. If the game completed normally (not quit early), shows the results modal with score and suc |
-| `setManualControlsState` | `disabled` | 524 | Toggles the enabled/disabled state of manual distance controls. Used to lock controls during game mode so the user can't change distance. |
-| `formatDistance` | `distMeters` | 616 | Formats a meters value into the currently active display unit. */ |
-| `renderPracticeSummary` | `_none_` | 624 | Builds the practice summary DOM and injects it into the modal. Called each time the modal opens so the numbers are always current. |
+| `setTargetMode` | `on` | 275 | Arms or disarms crosshair mode. This no longer changes the main screen — the basket/player visual and distance controls stay put. When armed, the land |
+| `updateTargetProgress` | `_none_` | 288 | Updates the "Marks: n / bag" progress readout in the popup. */ |
+| `renderMarkers` | `_none_` | 293 | Rebuilds the marker dots from the current in-progress set. */ |
+| `openLandingModal` | `_none_` | 308 | Opens the landing-input popup for the current distance/bag. Called from the OK handler when crosshair mode is armed. |
+| `commitLanding` | `_none_` | 322 | Stores whatever marks were placed into targetData for the captured distance, then closes the popup. Safe to call with zero marks. |
+| `heatColor` | `t` | 362 | Maps intensity t (0..1) to a blue→cyan→green→yellow→red heat color. */ |
+| `drawHeatmap` | `canvas, points, radiusFactor = 0.14` | 386 | Draws a density heatmap of normalized points onto the given canvas. */ |
+| `makeHeatmapWrap` | `densityPoints, labelPoints` | 422 | Builds a basket image with an overlaid heatmap canvas and optional labels. */ |
+| `centroid` | `points` | 452 | Mean (centroid) of a set of normalized points. */ |
+| `dispersion` | `points, c` | 459 | Mean distance of points from a center — a grouping-spread measure. */ |
+| `distancesWithMarks` | `_none_` | 467 | Returns sorted list of distances that have landing marks. */ |
+| `renderSummaryHeatmap` | `_none_` | 479 | Appends the aggregate "landing heatmap" (all marks) with per-distance average-position labels, plus a button to open the per-distance modal. Called at |
+| `renderDistanceHeatmaps` | `_none_` | 515 | Renders one heatmap + grouping stats block per practiced distance. */ |
+| `renderStatsSummary` | `_none_` | 571 |  |
+| `nextGameThrow` | `_none_` | 759 | Picks a random distance between gameMin and gameMax (inclusive), updates the UI, and displays the throw counter. |
+| `recordGameThrow` | `isSink` | 783 | Records a single throw during game mode. Key design choice: reps is NOT incremented during game mode. This keeps the reps counter as a "focused practi |
+| `endGame` | `quitEarly = false` | 825 | Ends the current game session and restores normal mode UI. If the game completed normally (not quit early), shows the results modal with score and suc |
+| `setManualControlsState` | `disabled` | 859 | Toggles the enabled/disabled state of manual distance controls. Used to lock controls during game mode so the user can't change distance. |
+| `formatDistance` | `distMeters` | 954 | Formats a meters value into the currently active display unit. */ |
+| `renderPracticeSummary` | `_none_` | 962 | Builds the practice summary DOM and injects it into the modal. Called each time the modal opens so the numbers are always current. |
 
 ## Top-Level Variables
 
@@ -95,8 +110,22 @@
 | `let` | `gameCurrentThrow` | 103 | Current throw number (1-indexed) |
 | `let` | `gameSessionStats` | 104 | Game session accumulator |
 | `let` | `randomizeStanceInGame` | 105 | Whether the game picks a random stance each throw |
-| `const` | `practiceSummaryModal` | 612 |  |
-| `const` | `practiceSummaryContent` | 613 |  |
+| `const` | `btnToggleTarget` | 251 | Crosshair toggle |
+| `const` | `landingModal` | 252 | Landing-input popup |
+| `const` | `landingDistanceLabel` | 253 | Distance shown in popup |
+| `const` | `btnLandingDone` | 254 | Finish/close popup |
+| `const` | `targetBasket` | 255 | Clickable basket wrapper |
+| `const` | `targetMarkers` | 256 | Marker dots overlay |
+| `const` | `targetProgress` | 257 | "Marks: n / bag" line |
+| `const` | `heatmapModal` | 260 |  |
+| `const` | `heatmapModalContent` | 261 |  |
+| `let` | `isTargetMode` | 264 | Whether crosshair mode is armed (records landings after OK) |
+| `let` | `targetData` | 265 | Session-only landing positions, keyed by distance |
+| `let` | `currentSet` | 266 | Marks placed in the currently-open landing popup |
+| `let` | `landingDistance` | 267 | Distance captured when the popup opened |
+| `let` | `landingBag` | 268 | Number of marks expected (bag size at OK time) |
+| `const` | `practiceSummaryModal` | 950 |  |
+| `const` | `practiceSummaryContent` | 951 |  |
 
 ## Event Listeners
 
@@ -106,22 +135,27 @@
 | `btnUnitToggle` | `click` | 122 |
 | `stanceSelect` | `change` | 210 |
 | `btnToggleStance` | `click` | 215 |
-| `btn` | `click` | 301 |
-| `btnMissedMinus` | `click` | 324 |
-| `btnMissedPlus` | `click` | 331 |
-| `btnOpenGameSetup` | `click` | 351 |
-| `btn-cancel-game` | `click` | 368 |
-| `btn-start-game` | `click` | 377 |
-| `btn-quit-game` | `click` | 416 |
-| `btn-close-game-over` | `click` | 419 |
-| `btn-game-sink` | `click` | 481 |
-| `btn-game-miss` | `click` | 482 |
-| `btnOk` | `click` | 546 |
-| `btn-left` | `click` | 577 |
-| `btn-right` | `click` | 581 |
-| `btn-reset` | `click` | 585 |
-| `distanceSlider` | `input` | 589 |
-| `btn-end-practice` | `click` | 715 |
-| `btn-close-practice-summary` | `click` | 721 |
-| `btn-download` | `click` | 733 |
-| `upload-json` | `change` | 756 |
+| `btnToggleTarget` | `click` | 282 |
+| `targetBasket` | `click` | 333 |
+| `btnLandingDone` | `click` | 350 |
+| `btn` | `click` | 507 |
+| `btn-close-heatmap` | `click` | 559 |
+| `btn` | `click` | 631 |
+| `btnMissedMinus` | `click` | 654 |
+| `btnMissedPlus` | `click` | 661 |
+| `btnOpenGameSetup` | `click` | 681 |
+| `btn-cancel-game` | `click` | 698 |
+| `btn-start-game` | `click` | 707 |
+| `btn-quit-game` | `click` | 750 |
+| `btn-close-game-over` | `click` | 753 |
+| `btn-game-sink` | `click` | 815 |
+| `btn-game-miss` | `click` | 816 |
+| `btnOk` | `click` | 881 |
+| `btn-left` | `click` | 915 |
+| `btn-right` | `click` | 919 |
+| `btn-reset` | `click` | 923 |
+| `distanceSlider` | `input` | 927 |
+| `btn-end-practice` | `click` | 1062 |
+| `btn-close-practice-summary` | `click` | 1068 |
+| `btn-download` | `click` | 1080 |
+| `upload-json` | `change` | 1103 |

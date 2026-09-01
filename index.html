@@ -24,16 +24,16 @@
     <div id="welcome-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>Welcome to discgolf putting tracker</h2>
-            <p>This tool helps you track your putting accuracy across different distances.</p>
+            <p>Track your putting accuracy across distances (1–35 m / 3–115 ft).</p>
             <ul class="modal-instructions">
-                <li><strong>Set Distance:</strong> Use the slider or arrows to pick your distance.</li>
-                <li><strong>Unit:</strong> The range is 1–35 m (3–115 ft). The slider and image display distances only up to C2.</li>
-                <li><strong>My Bag:</strong> Select how many discs you are throwing.</li>
-                <li><strong>Missed:</strong> Log how many throws you missed.</li>
-                <li><strong>Save:</strong> Click <strong>OK</strong> to calculate your success rate for that specific distance.</li>
-                <li><strong>Data:</strong> Use the buttons at the bottom to download or upload your past sessions (json format). The reload will reset your progress.</li>
-                <li><strong>Game Mode:</strong> Click the 🎮 button to enter game mode, where the distance changes every throw. You can set the min and max distance and total throws for the game session.</li>
-                <li><strong>Support:</strong> If you would like to support this project, please consider supporting us via <a href="https://www.paypal.com/donate/?business=YOUR_PAYPAL_EMAIL&amount=10&currency_code=USD" target="_blank">PayPal</a></li>
+                <li><strong>Log putts:</strong> Pick your distance, set how many discs are in your bag, log how many you missed, then press <strong>OK</strong> to save your success rate for that distance.</li>
+                <li><strong>Slider:</strong> The slider only goes up to 20 m — use the arrow buttons for 21–35 m.</li>
+                <li><strong>🧍 Stance:</strong> Toggle to pick your putting stance.</li>
+                <li><strong>🎯 Accuracy:</strong> Arm it to mark where each disc lands after OK.</li>
+                <li><strong>🎮 Game:</strong> Random distance every throw — hit Sink or Miss.</li>
+                <li><strong>End Practice:</strong> Session summary, stats and landing heatmaps.</li>
+                <li><strong>Data:</strong> Download / upload sessions as JSON.</li>
+                <li><strong>Support:</strong> Back the project via <a href="https://www.paypal.com/donate/?hosted_button_id=ULEZTSWZFVPSG" target="_blank">PayPal</a>.</li>
             </ul>
             <button id="btn-close-modal" class="btn-primary">Got it, let's go!</button>
         </div>
@@ -115,6 +115,45 @@
     </div>
 
     <!-- ============================================================
+         LANDING INPUT MODAL
+         Hidden by default (d-none). Opened after the user clicks OK
+         while crosshair mode is active. The user taps the basket to
+         mark where each disc landed; after `bag` marks (or when Done
+         is pressed) the positions are stored (session-only) in
+         targetData for that distance and feed the End Practice heatmap.
+         Uses Basketbig.png, falling back to basket.png if absent.
+         ============================================================ -->
+    <div id="landing-modal" class="modal-overlay d-none">
+        <div class="modal-content">
+            <h2>Where did they land?</h2>
+            <p class="landing-sub">Tap the basket for each disc — <span id="landing-distance">6m</span></p>
+            <div class="target-basket" id="target-basket">
+                <img id="target-basket-img" src="images/Basketbig.png" alt="Basket target"
+                     onerror="this.onerror=null; this.src='images/basket.png';">
+                <!-- Markers (dots) are appended here by JS -->
+                <div class="target-markers" id="target-markers"></div>
+            </div>
+            <div class="target-progress" id="target-progress">Marks: 0 / 5</div>
+            <button id="btn-landing-done" class="btn-primary">Done</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PER-DISTANCE HEATMAP MODAL
+         Hidden by default (d-none). Opened from the "Per-distance
+         heatmaps" button inside the Practice Summary. Renders one
+         landing heatmap + grouping stats per practiced distance.
+         Populated by renderDistanceHeatmaps() in script.js.
+         ============================================================ -->
+    <div id="heatmap-modal" class="modal-overlay d-none">
+        <div class="modal-content">
+            <h2>Heatmaps by Distance</h2>
+            <div id="heatmap-modal-content"></div>
+            <button id="btn-close-heatmap" class="btn-primary">Close</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
          MAIN APPLICATION CONTAINER
          Max-width 480px, centered. Full-bleed on mobile, card style
          on tablet/desktop (handled by CSS media query at 520px).
@@ -123,6 +162,10 @@
 
         <!-- Top-left: opens game setup modal -->
         <button id="btn-open-game-setup" class="game-toggle-btn">🎮</button>
+        <!-- Next to game button: checkable crosshair (aim-tracking) toggle.
+             White by default, blue when active. Toggles target mode where the
+             user clicks the basket to mark where each disc landed. -->
+        <button id="btn-toggle-target" class="target-toggle-btn" aria-pressed="false" title="Aim tracker">🎯</button>
         <!-- Top-right: toggles between meters and feet display -->
         <button id="btn-unit-toggle" class="unit-toggle">Unit: Meters</button>
 
@@ -240,8 +283,9 @@
                 </div>
             </div>
 
-            <!-- Missed counter: +/- buttons with display. Capped at currentBag. -->
-            <div class="input-group-col">
+            <!-- Missed counter: +/- buttons with display. Capped at currentBag.
+                 Hidden in target mode (id used by script.js). -->
+            <div class="input-group-col" id="missed-group">
                 <label>How many missed?</label>
                 <div class="counter-group">
                     <button class="counter-btn" id="missed-minus">-</button>
