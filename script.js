@@ -62,6 +62,27 @@ const gameOverModal = document.getElementById('game-over-modal');    // Game res
 const gameActiveBanner = document.getElementById('game-active-banner'); // In-game progress banner
 const gameProgressText = document.getElementById('game-progress');   // "Throw X / Y" text
 
+// -- Stance selector (shared between normal and game mode) --
+const stanceSelect = document.getElementById('stance-select');           // Stance dropdown
+const stanceJumpOption = document.getElementById('stance-jump-option');  // "Jump Putt" option (distance-gated)
+const btnToggleStance = document.getElementById('btn-toggle-stance');    // Show/hide the stance selector
+const stanceSelector = document.getElementById('stance-selector');       // Stance selector wrapper (hidden by default)
+const gameStanceDisplay = document.getElementById('game-stance-display'); // Stance line in the game banner
+const gameStanceName = document.getElementById('game-stance-name');      // Random stance name shown during a game
+
+/* Ordered list of stances. `requiresOver10` marks stances only valid when
+   the distance is greater than 10 m (currently just Jump Putt). Labels here
+   must stay in sync with the <option>s in index.html. */
+const STANCES = [
+    { value: 'staggered', label: 'Staggered Stance' },
+    { value: 'straddle',  label: 'Straddle' },
+    { value: 'kneeling',  label: 'Kneeling Putt' },
+    { value: 'turbo',     label: 'Turbo Putt' },
+    { value: 'split',     label: 'Split Stance' },
+    { value: 'lunge',     label: 'Lunge Putt' },
+    { value: 'jump',      label: 'Jump Putt', requiresOver10: true },
+];
+
 
 /* ==========================================================================
    STATE VARIABLES
@@ -72,6 +93,7 @@ let currentDistance = 6;   // Active distance in meters (range: 1-35)
 let currentBag = 5;        // Number of discs selected (range: 1-10)
 let currentMissed = 0;     // Missed throws in current session (reset after OK)
 let isMeters = true;       // Display unit: true = meters, false = feet
+let currentStance = 'staggered'; // Selected putting stance (label only for now — not yet tracked in stats)
 
 // -- Game mode state --
 let isGameMode = false;    // Whether game mode is currently active
@@ -80,6 +102,7 @@ let gameMax = 10;          // Maximum random distance (meters)
 let gameTotalThrows = 10;  // Total throws configured for this game session
 let gameCurrentThrow = 1;  // Current throw number (1-indexed)
 let gameSessionStats = { totalThrows: 0, totalMissed: 0 }; // Game session accumulator
+let randomizeStanceInGame = false; // Whether the game picks a random stance each throw
 
 
 /* ==========================================================================
@@ -150,8 +173,61 @@ function updateUI(distance) {
         successDisplay.innerText = Math.round(success);
     }
 
+    // Enable/disable the distance-gated "Jump Putt" stance option
+    updateStanceOptions();
+
     // Re-render the full stats bar chart
     renderStatsSummary();
+}
+
+
+/* ==========================================================================
+   STANCE SELECTOR
+
+   Currently a label-only selector (the chosen stance is not yet written to
+   statsData — that will come later). The one piece of live behavior is the
+   "Jump Putt" option, which is only valid for distances greater than 10 m.
+
+   updateStanceOptions() hides/disables that option when the current distance
+   is 10 m or less, and quietly reverts the selection to the default stance
+   if Jump Putt was selected when the distance dropped out of range.
+   ========================================================================== */
+function updateStanceOptions() {
+    const jumpAllowed = currentDistance > 10;
+
+    // Toggle the Jump Putt option's visibility/availability
+    stanceJumpOption.hidden = !jumpAllowed;
+    stanceJumpOption.disabled = !jumpAllowed;
+
+    // If Jump Putt was selected but is no longer valid, fall back to default
+    if (!jumpAllowed && currentStance === 'jump') {
+        currentStance = 'staggered';
+        stanceSelect.value = currentStance;
+    }
+}
+
+// Keep currentStance in sync with the dropdown
+stanceSelect.addEventListener('change', (e) => {
+    currentStance = e.target.value;
+});
+
+// Toggle icon: reveal/hide the stance selector (hidden by default)
+btnToggleStance.addEventListener('click', () => {
+    const nowHidden = stanceSelector.classList.toggle('d-none');
+    btnToggleStance.classList.toggle('active', !nowHidden);
+    btnToggleStance.setAttribute('aria-pressed', String(!nowHidden));
+});
+
+/** Returns the human-readable label for a stance value. */
+function stanceLabel(value) {
+    const s = STANCES.find(st => st.value === value);
+    return s ? s.label : value;
+}
+
+/** Picks a random stance valid for the given distance (respects the >10 m rule). */
+function pickRandomStance(distance) {
+    const valid = STANCES.filter(s => !s.requiresOver10 || distance > 10);
+    return valid[Math.floor(Math.random() * valid.length)];
 }
 
 
@@ -328,6 +404,10 @@ document.getElementById('btn-start-game').addEventListener('click', () => {
     // Disable manual distance controls during game
     setManualControlsState(true);
 
+    // Read the randomize-stance option; show the stance line only when enabled
+    randomizeStanceInGame = document.getElementById('game-random-stance').checked;
+    gameStanceDisplay.classList.toggle('d-none', !randomizeStanceInGame);
+
     // Begin first throw
     nextGameThrow();
 });
@@ -347,6 +427,14 @@ function nextGameThrow() {
     currentDistance = randomDist;
     updateUI(currentDistance);
     gameProgressText.innerText = `Throw ${gameCurrentThrow} / ${gameTotalThrows}`;
+
+    // If enabled, suggest a fresh random stance for this throw (valid for the distance)
+    if (randomizeStanceInGame) {
+        const stance = pickRandomStance(currentDistance);
+        currentStance = stance.value;
+        stanceSelect.value = currentStance;
+        gameStanceName.innerText = stance.label;
+    }
 }
 
 /**
@@ -405,6 +493,7 @@ function endGame(quitEarly = false) {
 
     // Restore normal mode UI elements
     gameActiveBanner.classList.add('d-none');
+    gameStanceDisplay.classList.add('d-none');
     normalTrackingSection.classList.remove('d-none');
     btnOpenGameSetup.classList.remove('d-none');
     setManualControlsState(false);
@@ -500,6 +589,137 @@ document.getElementById('btn-reset').addEventListener('click', () => {
 distanceSlider.addEventListener('input', (e) => {
     currentDistance = parseInt(e.target.value);
     updateUI(currentDistance);
+});
+
+
+/* ==========================================================================
+   PRACTICE SUMMARY
+
+   Opened by the "End Practice" button. Aggregates the entire statsData
+   object into a single session overview and renders it into the
+   practice summary modal. Purely a read-only view — it does not modify
+   or reset any stored data.
+
+   Stats shown:
+     - Total putts thrown, made, and missed
+     - Overall success rate (%)
+     - Number of distinct distances practiced
+     - Total practice sessions (sum of reps from normal mode)
+     - Best distance (highest success rate)
+     - Toughest distance (lowest success rate)
+     - Longest distance made (furthest distance with at least one sink)
+   ========================================================================== */
+const practiceSummaryModal = document.getElementById('practice-summary-modal');
+const practiceSummaryContent = document.getElementById('practice-summary-content');
+
+/** Formats a meters value into the currently active display unit. */
+function formatDistance(distMeters) {
+    return isMeters ? `${distMeters}m` : `${Math.round(distMeters * 3.28084)}ft`;
+}
+
+/**
+ * Builds the practice summary DOM and injects it into the modal.
+ * Called each time the modal opens so the numbers are always current.
+ */
+function renderPracticeSummary() {
+    // Only consider distances that actually have throws logged
+    const distances = Object.keys(statsData)
+        .map(Number)
+        .filter(d => statsData[d] && statsData[d].totalBalls > 0)
+        .sort((a, b) => a - b);
+
+    // No data yet — show a friendly placeholder
+    if (distances.length === 0) {
+        practiceSummaryContent.innerHTML =
+            '<p class="empty-stats">No putts logged yet. Go throw some discs!</p>';
+        return;
+    }
+
+    // Aggregate totals and find the best / toughest / longest-made distances
+    let totalPutts = 0;
+    let totalMissed = 0;
+    let totalSessions = 0;
+    let best = null;        // { dist, rate }
+    let toughest = null;    // { dist, rate }
+    let longestMade = null; // furthest distance (meters) with at least one sink
+
+    distances.forEach(dist => {
+        const data = statsData[dist];
+        totalPutts += data.totalBalls;
+        totalMissed += data.totalMissed;
+        totalSessions += data.reps || 0;
+
+        const madeAtDist = data.totalBalls - data.totalMissed;
+        const rate = madeAtDist / data.totalBalls;
+
+        if (!best || rate > best.rate) best = { dist, rate };
+        if (!toughest || rate < toughest.rate) toughest = { dist, rate };
+        if (madeAtDist > 0 && (longestMade === null || dist > longestMade)) {
+            longestMade = dist;
+        }
+    });
+
+    const totalMade = totalPutts - totalMissed;
+    const overallRate = Math.round((totalMade / totalPutts) * 100);
+
+    // -- Top grid of headline numbers --
+    const cards = [
+        { value: totalPutts, label: 'Total Putts' },
+        { value: totalMade, label: 'Made' },
+        { value: totalMissed, label: 'Missed' },
+        { value: `${overallRate}%`, label: 'Success Rate' },
+        { value: distances.length, label: 'Distances' },
+        { value: totalSessions, label: 'Sessions' },
+    ];
+
+    const cardsHtml = cards.map(c => `
+        <div class="summary-card">
+            <div class="summary-value">${c.value}</div>
+            <div class="summary-label">${c.label}</div>
+        </div>
+    `).join('');
+
+    // -- Highlight rows (best / toughest / longest made) --
+    const highlights = [
+        {
+            icon: '🎯',
+            label: 'Best distance',
+            value: `${formatDistance(best.dist)} · ${Math.round(best.rate * 100)}%`,
+        },
+        {
+            icon: '💪',
+            label: 'Toughest distance',
+            value: `${formatDistance(toughest.dist)} · ${Math.round(toughest.rate * 100)}%`,
+        },
+        {
+            icon: '🚀',
+            label: 'Longest made',
+            value: longestMade !== null ? formatDistance(longestMade) : '—',
+        },
+    ];
+
+    const highlightsHtml = highlights.map(h => `
+        <div class="summary-highlight">
+            <span class="summary-highlight-label">${h.icon} ${h.label}</span>
+            <span class="summary-highlight-value">${h.value}</span>
+        </div>
+    `).join('');
+
+    practiceSummaryContent.innerHTML = `
+        <div class="summary-grid">${cardsHtml}</div>
+        <div class="summary-highlights">${highlightsHtml}</div>
+    `;
+}
+
+// Open the summary modal (rebuild content first so it's up to date)
+document.getElementById('btn-end-practice').addEventListener('click', () => {
+    renderPracticeSummary();
+    practiceSummaryModal.classList.remove('d-none');
+});
+
+// Close the summary modal
+document.getElementById('btn-close-practice-summary').addEventListener('click', () => {
+    practiceSummaryModal.classList.add('d-none');
 });
 
 

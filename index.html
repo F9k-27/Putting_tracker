@@ -67,6 +67,13 @@
                 <input type="number" id="game-reps" class="input-style" value="10" min="1" max="100">
             </div>
 
+            <!-- When checked, a random stance is suggested each throw
+                 (respecting the >10 m rule for Jump Putt). Read at game start. -->
+            <label class="checkbox-row">
+                <input type="checkbox" id="game-random-stance">
+                <span>Change stance randomly each throw</span>
+            </label>
+
             <!-- Cancel returns to normal mode; Start begins the game -->
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-cancel-game" class="btn-secondary">Cancel</button>
@@ -88,6 +95,22 @@
             <div id="game-results-summary" style="font-size: 18px; margin: 20px 0; font-weight: bold; color: var(--accent-blue-hover);"></div>
             <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">Your overall stats have been updated.</p>
             <button id="btn-close-game-over" class="btn-primary">Awesome!</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PRACTICE SUMMARY MODAL
+         Hidden by default (d-none). Opened by the "End Practice"
+         button. Displays an overview of the whole practice session:
+         total putts, makes/misses, overall success rate and a few
+         highlight stats. Populated by renderPracticeSummary() in JS.
+         ============================================================ -->
+    <div id="practice-summary-modal" class="modal-overlay d-none">
+        <div class="modal-content">
+            <h2>Practice Summary</h2>
+            <!-- JS populates this with stat cards + highlights -->
+            <div id="practice-summary-content"></div>
+            <button id="btn-close-practice-summary" class="btn-primary">Close</button>
         </div>
     </div>
 
@@ -154,12 +177,39 @@
                 <span id="game-progress">Throw 1 / 10</span>
                 <button id="btn-quit-game" class="btn-quit">Quit</button>
             </div>
+            <!-- Shown only when "randomize stance" is enabled for the game.
+                 Populated with a fresh random stance each throw. -->
+            <div id="game-stance-display" class="game-stance d-none">Stance: <span id="game-stance-name">—</span></div>
             <div class="game-actions-inline">
                 <!-- Miss: records a missed throw for this distance -->
                 <button id="btn-game-miss" class="btn-game game-miss">&#10060; Miss</button>
                 <!-- Sink: records a successful throw for this distance -->
                 <button id="btn-game-sink" class="btn-game game-sink">&#9989; Sink</button>
             </div>
+        </div>
+
+        <!-- ── Stance Selector ──
+             Kept outside the normal/game sections so it stays visible in
+             both modes. Currently a selectable label only (not yet tracked
+             in stats). "Jump Putt" is only available when the current
+             distance is greater than 10 m — updateStanceOptions() toggles
+             it and resets the selection if the distance drops to <= 10 m.
+
+             The selector is hidden by default; the toggle icon below
+             reveals/hides it (state handled in script.js). -->
+        <button id="btn-toggle-stance" class="stance-toggle-btn" aria-pressed="false">🧍 Stance</button>
+
+        <div class="input-group-col stance-selector d-none" id="stance-selector">
+            <label>Stance:</label>
+            <select id="stance-select" class="input-style">
+                <option value="staggered">Staggered Stance</option>
+                <option value="straddle">Straddle</option>
+                <option value="kneeling">Kneeling Putt</option>
+                <option value="turbo">Turbo Putt</option>
+                <option value="split">Split Stance</option>
+                <option value="lunge">Lunge Putt</option>
+                <option value="jump" id="stance-jump-option">Jump Putt (&gt;10 m)</option>
+            </select>
         </div>
 
         <hr class="divider">
@@ -221,6 +271,11 @@
         <div id="stats-summary-container" class="stats-summary"></div>
 
         <hr class="divider">
+
+        <!-- ── End Practice ──
+             Opens the Practice Summary modal with an overview of the
+             whole session (total putts, success rate, highlights). -->
+        <button id="btn-end-practice" class="btn-primary">End Practice</button>
 
         <!-- ── Data Import/Export ──
              Download: exports statsData as a dated JSON file.
